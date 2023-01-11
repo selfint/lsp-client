@@ -1,9 +1,4 @@
-pub struct LspClient<T> {
-    server: T,
-}
+mod jsonrpc;
+mod lsp;
 
-impl<T> LspClient<T> {
-    pub fn new(server: T) -> Self {
-        Self { server }
-    }
-}
+pub use lsp::LspClient;
