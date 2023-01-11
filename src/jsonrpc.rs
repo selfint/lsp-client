@@ -45,8 +45,11 @@ pub fn get_jsonrpc_content_length(buf: &[u8]) -> Option<usize> {
     }
 }
 
-fn build_jsonrpc_request<P: Serialize>(method: &str, params: &P, id: Id) -> Result<String> {
-    let params = Some(serde_json::value::to_raw_value(params)?);
+fn build_jsonrpc_request<P: Serialize>(method: &str, params: &Option<P>, id: Id) -> Result<String> {
+    let params = match params {
+        Some(params) => Some(serde_json::value::to_raw_value(params)?),
+        None => None,
+    };
 
     let jsonrpc_request = jsonrpsee_types::request::RequestSer::owned(id, method, params);
     let jsonrpc_request = serde_json::to_string(&jsonrpc_request)?;
@@ -87,19 +90,36 @@ mod tests {
 
         let actual = build_jsonrpc_request(
             "subtract",
-            &Params {
+            &Some(Params {
                 minuend: 42,
                 subtrahead: 23,
-            },
+            }),
             Id::Number(3),
         );
 
         assert!(actual.is_ok());
-        let actual = actual.unwrap();
+        assert_requests_eq(expected, actual.unwrap())
+    }
 
-        let actual = serde_json::from_str::<Request>(&actual);
+    #[test]
+    fn test_build_jsonrpc_request_no_params() {
+        let expected = Request {
+            jsonrpc: jsonrpsee_types::TwoPointZero,
+            id: Id::Number(3),
+            method: "subtract".into(),
+            params: None,
+        };
+
+        let actual = build_jsonrpc_request::<()>("subtract", &None, Id::Number(3));
+
         assert!(actual.is_ok());
+        assert_requests_eq(expected, actual.unwrap())
+    }
 
+    fn assert_requests_eq(expected: Request, actual: String) {
+        let actual = serde_json::from_str::<Request>(&actual);
+
+        assert!(actual.is_ok());
         assert_eq!(
             serde_json::to_string(&expected).unwrap(),
             serde_json::to_string(&actual.unwrap()).unwrap()
