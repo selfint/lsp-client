@@ -2,75 +2,77 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use anyhow::Result;
-use tokio::io::AsyncRead;
-use tokio::io::AsyncWrite;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::process::ChildStderr;
 use tokio::process::ChildStdin;
 use tokio::process::ChildStdout;
+use tokio::sync::mpsc;
 use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::sync::mpsc::UnboundedSender;
-
-use crate::lsp::server_proxy::{LspServerProxy, ToServerChannel};
-use serde_json::Value;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
-use crate::lsp::protocol::{deserialize, serialize};
+use serde_json::Value;
 
-type Responses = Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>;
+use crate::lsp::protocol::{deserialize, serialize};
+use crate::lsp::server_proxy::{LspServerProxy, ToServerChannel};
+
 pub struct StdIOProxy {
     to_server: ToServerChannel,
-    responses: Responses,
 }
 
 impl StdIOProxy {
-    pub fn new(server_proc: tokio::process::Child) -> Self {
+    pub fn new(stdin: ChildStdin, stdout: ChildStdout, stderr: ChildStderr) -> Self {
         let (to_server, receiver) = mpsc::unbounded_channel();
-        let responses: Responses = Arc::new(Mutex::new(HashMap::new()));
+        let responses = Arc::new(Mutex::new(HashMap::new()));
 
-        start_worker_threads(server_proc, receiver, &responses);
+        start_worker_threads(stdin, stdout, stderr, receiver, &responses);
 
-        Self {
-            to_server,
-            responses,
-        }
+        Self { to_server }
     }
 }
 
 fn start_worker_threads(
-    mut server_proc: tokio::process::Child,
+    stdin: ChildStdin,
+    stdout: ChildStdout,
+    stderr: ChildStderr,
     to_server_receiver: UnboundedReceiver<(Value, Option<oneshot::Sender<Value>>)>,
     responses: &Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
 ) {
-    let proc_stdin = server_proc
-        .stdin
-        .take()
-        .expect("failed to acquire process stdin");
-    let proc_stdout = server_proc
-        .stdout
-        .take()
-        .expect("failed to acquire process stdout");
-    let proc_stderr = server_proc
-        .stderr
-        .take()
-        .expect("failed to acquire process stderr");
-
     let (to_proc, to_proc_receiver) = mpsc::unbounded_channel();
 
     start_to_proc_thread(to_server_receiver, to_proc, Arc::clone(responses));
-    start_to_stdin_thread(to_proc_receiver, proc_stdin);
-    start_std_responses_thread(proc_stdout, Arc::clone(responses));
-    start_std_responses_thread(proc_stderr, Arc::clone(responses));
+    start_to_stdin_thread(to_proc_receiver, stdin);
+    start_stdout_responses_thread(stdout, Arc::clone(responses));
+    start_stderr_responses_thread(stderr);
 }
 
-/// Get outputs from process stdout/stderr and send results using the response channels.
-fn start_std_responses_thread<T>(
-    mut proc_stdout: T,
+/// Log outputs from process stderr
+fn start_stderr_responses_thread(mut proc_stderr: ChildStderr) {
+    tokio::spawn(async move {
+        let mut buf = vec![];
+        loop {
+            let byte = proc_stderr
+                .read_u8()
+                .await
+                .expect("failed to read from process stderr");
+
+            buf.push(byte);
+
+            let text = std::str::from_utf8(&buf).unwrap();
+            eprintln!("Got error: {}", text);
+
+            if text.ends_with('\n') {
+                buf.clear();
+            }
+        }
+    });
+}
+
+/// Get outputs from process stdout and send results using the response channels.
+fn start_stdout_responses_thread(
+    mut proc_stdout: ChildStdout,
     responses: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
-) where
-    T: AsyncRead + std::marker::Unpin + std::marker::Send + 'static,
-{
+) {
     tokio::spawn(async move {
         let mut buf = vec![];
         loop {
@@ -82,6 +84,7 @@ fn start_std_responses_thread<T>(
             buf.push(byte);
 
             let Ok(msg) = deserialize(&buf) else { continue };
+
             // we only need to send a response if the message has an id
             let Some(id) = msg.get("id") else { continue };
             let Some(id) = id.as_u64() else {panic!("failed to convert id '{:?}' to u64", id)};
