@@ -1,2 +1,2 @@
-mod jsonrpc;
-mod lsp;
+pub mod jsonrpc;
+pub mod lsp;
