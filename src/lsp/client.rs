@@ -1,17 +1,14 @@
+use anyhow::Result;
 use lsp_types::notification::Notification as LspNotification;
 use lsp_types::request::Request as LspRequest;
-
-use anyhow::Result;
 use serde::de::DeserializeOwned;
 use tokio::sync::oneshot;
 
 use crate::jsonrpc::types::Notification;
 use crate::jsonrpc::types::Request;
-
 use crate::jsonrpc::types::Response;
+use crate::lsp::server_proxy::LspServerProxy;
 use crate::lsp::server_proxy::ToServerChannel;
-
-use super::server_proxy::LspServerProxy;
 
 pub struct Client {
     to_server: ToServerChannel,
