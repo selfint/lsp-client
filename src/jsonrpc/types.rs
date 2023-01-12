@@ -12,7 +12,7 @@ pub struct Request<P> {
 }
 
 impl<P> Request<P> {
-    fn new(method: impl Into<String>, params: Option<P>, id: Option<usize>) -> Self {
+    pub fn new(method: impl Into<String>, params: Option<P>, id: Option<usize>) -> Self {
         Self {
             jsonrpc: JSONRPC_V2.to_string(),
             method: method.into(),
@@ -31,7 +31,7 @@ pub struct Response<R, E> {
 }
 
 impl<R, E> Response<R, E> {
-    fn new(result: JsonRPCResult<R, E>, id: Option<usize>) -> Self {
+    pub fn new(result: JsonRPCResult<R, E>, id: Option<usize>) -> Self {
         Self {
             jsonrpc: JSONRPC_V2.to_string(),
             result,
@@ -64,7 +64,7 @@ pub struct Notification<P> {
 }
 
 impl<P> Notification<P> {
-    fn new(method: impl Into<String>, params: Option<P>) -> Self {
+    pub fn new(method: impl Into<String>, params: Option<P>) -> Self {
         Self {
             jsonrpc: JSONRPC_V2.to_string(),
             method: method.into(),
