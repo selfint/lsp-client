@@ -91,6 +91,7 @@ fn start_stdout_responses_thread(
             buf.push(byte);
 
             let Ok(msg) = deserialize(&buf) else { continue };
+            buf.clear();
 
             // we only need to send a response if the message has an id
             let Some(id) = msg.get("id") else { continue };
