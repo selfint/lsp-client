@@ -128,6 +128,15 @@ mod tests {
             }),
             Request::<()>::new("method", None, None),
         );
+        check_serde(
+            json!({
+                "jsonrpc": "2.0",
+                "method": "method",
+                "params": [0, 1],
+                "id": 3
+            }),
+            Request::new("method", Some(vec![0, 1]), Some(3)),
+        );
     }
 
     #[test]
@@ -152,6 +161,14 @@ mod tests {
                 "method": "method",
             }),
             Notification::<()>::new("method", None),
+        );
+        check_serde(
+            json!({
+                "jsonrpc": "2.0",
+                "method": "method",
+                "params": [0, 1],
+            }),
+            Notification::new("method", Some(vec![0, 1])),
         );
     }
 
