@@ -1,24 +1,19 @@
-use lsp_client::jsonrpc;
 use lsp_types::request::Initialize;
 use lsp_types::InitializeParams;
 use lsp_types::InitializeResult;
-use tokio::process::Child;
 
+use lsp_client::jsonrpc;
 use lsp_client::lsp::client::LspClient;
 use lsp_client::lsp::server_proxy::proxies::stdio_proxy::StdIOProxy;
 
-fn start_rust_analyzer() -> Child {
-    tokio::process::Command::new("rust-analyzer")
+fn start_client() -> LspClient {
+    let mut server_proc = tokio::process::Command::new("rust-analyzer")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
-        .expect("failed to start rust analyzer")
-}
+        .expect("failed to start rust analyzer");
 
-#[tokio::test]
-async fn test_rust_analyzer() {
-    let mut server_proc = start_rust_analyzer();
     let stdin = server_proc
         .stdin
         .take()
@@ -34,7 +29,12 @@ async fn test_rust_analyzer() {
 
     let proxy = StdIOProxy::new(stdin, stdout, stderr);
 
-    let client = LspClient::new(&proxy);
+    LspClient::new(&proxy)
+}
+
+#[tokio::test]
+async fn test_rust_analyzer() {
+    let client = start_client();
 
     let response = client
         .request::<Initialize, ()>(InitializeParams::default(), 0)
