@@ -35,9 +35,9 @@ impl Client {
     }
 
     pub fn notify<R: LspNotification>(&self, params: R::Params) -> Result<()> {
-        let request = serde_json::to_value(Notification::new(R::METHOD, Some(params)))?;
+        let notification = serde_json::to_value(Notification::new(R::METHOD, Some(params)))?;
 
-        self.to_server.send((request, None))?;
+        self.to_server.send((notification, None))?;
 
         Ok(())
     }
