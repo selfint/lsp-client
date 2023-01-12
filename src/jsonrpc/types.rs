@@ -3,7 +3,7 @@ use serde::Serialize;
 
 pub const JSONRPC_V2: &str = "2.0";
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
 pub struct Request<P> {
     pub jsonrpc: String,
     pub method: String,
@@ -23,7 +23,7 @@ impl<P> Request<P> {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
 pub struct Response<R, E> {
     pub jsonrpc: String,
     #[serde(flatten)]
@@ -41,22 +41,22 @@ impl<R, E> Response<R, E> {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum JsonRPCResult<R, E> {
     Result(R),
     Error(JsonRPCError<E>),
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
 pub struct JsonRPCError<D> {
-    pub code: i32,
+    pub code: i64,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<D>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
 pub struct Notification<P> {
     pub jsonrpc: String,
     pub method: String,
