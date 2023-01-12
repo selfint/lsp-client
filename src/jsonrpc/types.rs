@@ -4,15 +4,15 @@ pub const JSONRPC_V2: &str = "2.0";
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
 pub struct Request<P> {
-    jsonrpc: String,
-    method: String,
+    pub jsonrpc: String,
+    pub method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    params: Option<P>,
-    id: Option<usize>,
+    pub params: Option<P>,
+    pub id: Option<u64>,
 }
 
 impl<P> Request<P> {
-    pub fn new(method: impl Into<String>, params: Option<P>, id: Option<usize>) -> Self {
+    pub fn new(method: impl Into<String>, params: Option<P>, id: Option<u64>) -> Self {
         Self {
             jsonrpc: JSONRPC_V2.to_string(),
             method: method.into(),
@@ -24,14 +24,14 @@ impl<P> Request<P> {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
 pub struct Response<R, E> {
-    jsonrpc: String,
+    pub jsonrpc: String,
     #[serde(flatten)]
-    result: JsonRPCResult<R, E>,
-    id: Option<usize>,
+    pub result: JsonRPCResult<R, E>,
+    pub id: Option<u64>,
 }
 
 impl<R, E> Response<R, E> {
-    pub fn new(result: JsonRPCResult<R, E>, id: Option<usize>) -> Self {
+    pub fn new(result: JsonRPCResult<R, E>, id: Option<u64>) -> Self {
         Self {
             jsonrpc: JSONRPC_V2.to_string(),
             result,
@@ -49,18 +49,18 @@ pub enum JsonRPCResult<R, E> {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
 pub struct JsonRPCError<D> {
-    code: i32,
-    message: String,
+    pub code: i32,
+    pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<D>,
+    pub data: Option<D>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
 pub struct Notification<P> {
-    jsonrpc: String,
-    method: String,
+    pub jsonrpc: String,
+    pub method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    params: Option<P>,
+    pub params: Option<P>,
 }
 
 impl<P> Notification<P> {
