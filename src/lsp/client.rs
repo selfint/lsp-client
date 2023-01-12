@@ -2,11 +2,13 @@ use lsp_types::notification::Notification as LspNotification;
 use lsp_types::request::Request as LspRequest;
 
 use anyhow::Result;
+use serde::de::DeserializeOwned;
 use tokio::sync::oneshot;
 
 use crate::jsonrpc::types::Notification;
 use crate::jsonrpc::types::Request;
 
+use crate::jsonrpc::types::Response;
 use crate::lsp::server_proxy::ToServerChannel;
 
 use super::server_proxy::LspServerProxy;
@@ -22,7 +24,11 @@ impl Client {
         }
     }
 
-    pub async fn request<R: LspRequest>(&self, params: R::Params, id: usize) -> Result<R::Result> {
+    pub async fn request<R, E>(&self, params: R::Params, id: u64) -> Result<Response<R::Result, E>>
+    where
+        R: LspRequest,
+        E: DeserializeOwned,
+    {
         let request = serde_json::to_value(Request::new(R::METHOD, Some(params), Some(id)))?;
 
         let (sender, receiver) = oneshot::channel();
@@ -31,7 +37,7 @@ impl Client {
 
         let response = receiver.await?;
 
-        Ok(serde_json::from_value::<R::Result>(response)?)
+        Ok(serde_json::from_value::<Response<R::Result, E>>(response)?)
     }
 
     pub fn notify<R: LspNotification>(&self, params: R::Params) -> Result<()> {
@@ -57,7 +63,7 @@ mod tests {
     use lsp_types::{notification::Exit, request::Initialize, InitializeParams, InitializeResult};
 
     use super::*;
-    use crate::lsp::server_proxy::LspServerProxy;
+    use crate::{jsonrpc, lsp::server_proxy::LspServerProxy};
 
     struct MockLspServerProxy {
         hits: Arc<Mutex<HashMap<String, u32>>>,
@@ -88,14 +94,26 @@ mod tests {
 
                     match method {
                         "initialize" => {
+                            let id = msg
+                                .get("id")
+                                .expect("got initialize message without id")
+                                .as_u64()
+                                .expect("got non-u64 id");
+
                             response_channel
                                 .expect("got initialize request with None response channel")
-                                .send(serde_json::to_value(InitializeResult::default()).unwrap())
+                                .send(
+                                    serde_json::to_value(Response::<InitializeResult, ()>::new(
+                                        jsonrpc::types::JsonRPCResult::Result(
+                                            InitializeResult::default(),
+                                        ),
+                                        Some(id),
+                                    ))
+                                    .unwrap(),
+                                )
                                 .expect("failed to send response to initialize request");
                         }
-                        "exit" => {
-                            dbg!("got exit");
-                        }
+                        "exit" => {}
 
                         _ => panic!("Got msg with unexpected method: '{}'", method),
                     }
@@ -119,11 +137,17 @@ mod tests {
         let client = Client::new(&proxy);
 
         let response = client
-            .request::<Initialize>(InitializeParams::default(), 1)
+            .request::<Initialize, ()>(InitializeParams::default(), 1)
             .await;
 
-        assert!(response.is_ok());
-        assert_eq!(InitializeResult::default(), response.unwrap());
+        assert!(response.is_ok(), "{:?}", response);
+        assert_eq!(
+            Response::new(
+                jsonrpc::types::JsonRPCResult::Result(InitializeResult::default()),
+                Some(1)
+            ),
+            response.unwrap()
+        );
 
         let hits = proxy.hits.lock().expect("failed to acquire proxy hits");
 
@@ -173,20 +197,22 @@ mod tests {
 
         let client = Client::new(&proxy);
 
-        let response = client.notify::<Exit>(());
-
-        assert!(response.is_ok());
-
-        let response_1 = client.request::<Initialize>(InitializeParams::default(), 1);
-        let response_2 = client.request::<Initialize>(InitializeParams::default(), 2);
+        let response_1 = client.request::<Initialize, ()>(InitializeParams::default(), 1);
+        let response_2 = client.request::<Initialize, ()>(InitializeParams::default(), 2);
 
         let (first, second) = tokio::join!(response_1, response_2);
 
-        assert!(first.is_ok());
-        assert!(second.is_ok());
+        assert!(first.is_ok(), "{:?}", first);
+        assert!(second.is_ok(), "{:?}", second);
 
-        assert_eq!(InitializeResult::default(), first.unwrap());
-        assert_eq!(InitializeResult::default(), second.unwrap());
+        assert_eq!(
+            jsonrpc::types::JsonRPCResult::Result(InitializeResult::default()),
+            first.unwrap().result
+        );
+        assert_eq!(
+            jsonrpc::types::JsonRPCResult::Result(InitializeResult::default()),
+            second.unwrap().result
+        );
 
         let hits = proxy.hits.lock().expect("failed to acquire proxy hits");
         assert!(hits.get("initialize").is_some());
