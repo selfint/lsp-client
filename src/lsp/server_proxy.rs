@@ -5,5 +5,5 @@ use tokio::sync::oneshot;
 pub type ToServerChannel = mpsc::UnboundedSender<(Value, Option<oneshot::Sender<Value>>)>;
 
 pub trait LspServerProxy {
-    fn start(&mut self) -> ToServerChannel;
+    fn get_channel(&self) -> ToServerChannel;
 }

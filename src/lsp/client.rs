@@ -53,22 +53,16 @@ mod tests {
 
     struct MockLspServerProxy {
         hits: Arc<Mutex<HashMap<String, u32>>>,
+        to_server: ToServerChannel,
     }
 
     impl MockLspServerProxy {
         fn new() -> Self {
-            Self {
-                hits: Arc::new(Mutex::new(HashMap::new())),
-            }
-        }
-    }
-
-    impl LspServerProxy for MockLspServerProxy {
-        fn start(&mut self) -> ToServerChannel {
-            let (sender, mut receiver) =
+            let (to_server, mut receiver) =
                 mpsc::unbounded_channel::<(Value, Option<oneshot::Sender<Value>>)>();
 
-            let hits = self.hits.clone();
+            let hits = Arc::new(Mutex::new(HashMap::new()));
+            let hits_2 = Arc::clone(&hits);
 
             tokio::spawn(async move {
                 while let Some((msg, response_channel)) = receiver.recv().await {
@@ -78,7 +72,11 @@ mod tests {
                         .as_str()
                         .expect("got msg with non-str method");
 
-                    *hits.lock().unwrap().entry(method.to_string()).or_insert(0) += 1;
+                    *hits_2
+                        .lock()
+                        .unwrap()
+                        .entry(method.to_string())
+                        .or_insert(0) += 1;
 
                     match method {
                         "initialize" => {
@@ -96,14 +94,20 @@ mod tests {
                 }
             });
 
-            sender
+            Self { hits, to_server }
+        }
+    }
+
+    impl LspServerProxy for MockLspServerProxy {
+        fn get_channel(&self) -> ToServerChannel {
+            self.to_server.clone()
         }
     }
 
     #[tokio::test]
     async fn test_request() {
-        let mut proxy = MockLspServerProxy::new();
-        let to_server = proxy.start();
+        let proxy = MockLspServerProxy::new();
+        let to_server = proxy.get_channel();
 
         let client = Client { to_server };
 
@@ -122,8 +126,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_notify() {
-        let mut proxy = MockLspServerProxy::new();
-        let to_server = proxy.start();
+        let proxy = MockLspServerProxy::new();
+        let to_server = proxy.get_channel();
 
         let client = Client { to_server };
 
@@ -159,8 +163,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_concurrent() {
-        let mut proxy = MockLspServerProxy::new();
-        let to_server = proxy.start();
+        let proxy = MockLspServerProxy::new();
+        let to_server = proxy.get_channel();
 
         let client = Client { to_server };
 
