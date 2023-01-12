@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub const JSONRPC_V2: &str = "2.0";
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
-struct Request<P> {
+pub struct Request<P> {
     jsonrpc: String,
     method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -23,7 +23,7 @@ impl<P> Request<P> {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
-struct Response<R, E> {
+pub struct Response<R, E> {
     jsonrpc: String,
     #[serde(flatten)]
     result: JsonRPCResult<R, E>,
@@ -42,13 +42,13 @@ impl<R, E> Response<R, E> {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
-enum JsonRPCResult<R, E> {
+pub enum JsonRPCResult<R, E> {
     Result(R),
     Error(JsonRPCError<E>),
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
-struct JsonRPCError<D> {
+pub struct JsonRPCError<D> {
     code: i32,
     message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -56,7 +56,7 @@ struct JsonRPCError<D> {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
-struct Notification<P> {
+pub struct Notification<P> {
     jsonrpc: String,
     method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
