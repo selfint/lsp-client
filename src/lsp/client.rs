@@ -9,11 +9,19 @@ use crate::jsonrpc::types::Request;
 
 use crate::lsp::server_proxy::ToServerChannel;
 
+use super::server_proxy::LspServerProxy;
+
 pub struct Client {
     to_server: ToServerChannel,
 }
 
 impl Client {
+    pub fn new(proxy: &impl LspServerProxy) -> Self {
+        Self {
+            to_server: proxy.get_channel(),
+        }
+    }
+
     pub async fn request<R: LspRequest>(&self, params: R::Params, id: usize) -> Result<R::Result> {
         let request = serde_json::to_value(Request::new(R::METHOD, Some(params), Some(id)))?;
 
@@ -107,9 +115,8 @@ mod tests {
     #[tokio::test]
     async fn test_request() {
         let proxy = MockLspServerProxy::new();
-        let to_server = proxy.get_channel();
 
-        let client = Client { to_server };
+        let client = Client::new(&proxy);
 
         let response = client
             .request::<Initialize>(InitializeParams::default(), 1)
@@ -127,9 +134,8 @@ mod tests {
     #[tokio::test]
     async fn test_notify() {
         let proxy = MockLspServerProxy::new();
-        let to_server = proxy.get_channel();
 
-        let client = Client { to_server };
+        let client = Client::new(&proxy);
 
         let response = client.notify::<Exit>(());
 
@@ -164,9 +170,8 @@ mod tests {
     #[tokio::test]
     async fn test_concurrent() {
         let proxy = MockLspServerProxy::new();
-        let to_server = proxy.get_channel();
 
-        let client = Client { to_server };
+        let client = Client::new(&proxy);
 
         let response = client.notify::<Exit>(());
 
