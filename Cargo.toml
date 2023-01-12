@@ -13,4 +13,11 @@ serde = "1.0.152"
 regex = "1.7.1"
 normal = { git = "https://github.com/selfint/normal", tag = "v0.1.0" }
 lazy_static = "1.4.0"
-tokio = { version = "1.24.1", features = ["rt", "macros", "sync", "time"] }
+tokio = { version = "1.24.1", features = [
+    "rt",
+    "macros",
+    "sync",
+    "time",
+    "process",
+    "io-util",
+] }
