@@ -1,6 +1,7 @@
 use lsp_client::jsonrpc;
 use lsp_types::request::Initialize;
-use lsp_types::{InitializeParams, InitializeResult};
+use lsp_types::InitializeParams;
+use lsp_types::InitializeResult;
 use tokio::process::Child;
 
 use lsp_client::lsp::client::LspClient;
