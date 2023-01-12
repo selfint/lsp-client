@@ -3,8 +3,8 @@ use lsp_types::request::Initialize;
 use lsp_types::{InitializeParams, InitializeResult};
 use tokio::process::Child;
 
-use lsp_client::lsp::client::Client;
-use lsp_client::lsp::stdio_proxy::StdIOProxy;
+use lsp_client::lsp::client::LspClient;
+use lsp_client::lsp::server_proxy::proxies::stdio_proxy::StdIOProxy;
 
 fn start_rust_analyzer() -> Child {
     tokio::process::Command::new("rust-analyzer")
@@ -33,7 +33,7 @@ async fn test_rust_analyzer() {
 
     let proxy = StdIOProxy::new(stdin, stdout, stderr);
 
-    let client = Client::new(&proxy);
+    let client = LspClient::new(&proxy);
 
     let response = client
         .request::<Initialize, ()>(InitializeParams::default(), 0)

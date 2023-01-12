@@ -7,14 +7,15 @@ use tokio::sync::oneshot;
 use crate::jsonrpc::types::Notification;
 use crate::jsonrpc::types::Request;
 use crate::jsonrpc::types::Response;
+
 use crate::lsp::server_proxy::LspServerProxy;
 use crate::lsp::server_proxy::ToServerChannel;
 
-pub struct Client {
+pub struct LspClient {
     to_server: ToServerChannel,
 }
 
-impl Client {
+impl LspClient {
     pub fn new(proxy: &impl LspServerProxy) -> Self {
         Self {
             to_server: proxy.get_channel(),
@@ -131,7 +132,7 @@ mod tests {
     async fn test_request() {
         let proxy = MockLspServerProxy::new();
 
-        let client = Client::new(&proxy);
+        let client = LspClient::new(&proxy);
 
         let response = client
             .request::<Initialize, ()>(InitializeParams::default(), 1)
@@ -156,7 +157,7 @@ mod tests {
     async fn test_notify() {
         let proxy = MockLspServerProxy::new();
 
-        let client = Client::new(&proxy);
+        let client = LspClient::new(&proxy);
 
         let response = client.notify::<Exit>(());
 
@@ -192,7 +193,7 @@ mod tests {
     async fn test_concurrent() {
         let proxy = MockLspServerProxy::new();
 
-        let client = Client::new(&proxy);
+        let client = LspClient::new(&proxy);
 
         let response_1 = client.request::<Initialize, ()>(InitializeParams::default(), 1);
         let response_2 = client.request::<Initialize, ()>(InitializeParams::default(), 2);

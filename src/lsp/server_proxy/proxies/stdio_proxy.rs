@@ -20,6 +20,12 @@ pub struct StdIOProxy {
     to_server: ToServerChannel,
 }
 
+impl LspServerProxy for StdIOProxy {
+    fn get_channel(&self) -> ToServerChannel {
+        self.to_server.clone()
+    }
+}
+
 impl StdIOProxy {
     pub fn new(stdin: ChildStdin, stdout: ChildStdout, stderr: ChildStderr) -> Self {
         let (to_server, receiver) = mpsc::unbounded_channel();
@@ -148,10 +154,4 @@ fn start_to_proc_thread(
             }
         }
     });
-}
-
-impl LspServerProxy for StdIOProxy {
-    fn get_channel(&self) -> ToServerChannel {
-        self.to_server.clone()
-    }
 }
