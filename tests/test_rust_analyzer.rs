@@ -4,7 +4,7 @@ use lsp_types::InitializeResult;
 
 use lsp_client::jsonrpc;
 use lsp_client::lsp::client::LspClient;
-use lsp_client::lsp::server_proxy::proxies::stdio_proxy::StdIOProxy;
+use lsp_client::lsp::proxies::stdio_proxy::StdIOProxy;
 
 fn start_client() -> LspClient {
     let mut server_proc = tokio::process::Command::new("rust-analyzer")
