@@ -11,6 +11,6 @@ anyhow = "1.0.68"
 serde_json = { version = "1.0.91", features = ["raw_value"] }
 serde = "1.0.152"
 regex = "1.7.1"
-normal = { git = "https://github.com/selfint/normal" }
+normal = { git = "https://github.com/selfint/normal", tag = "v0.1.0" }
 lazy_static = "1.4.0"
 
