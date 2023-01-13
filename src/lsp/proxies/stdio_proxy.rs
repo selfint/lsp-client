@@ -1,21 +1,23 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-use tokio::io::AsyncReadExt;
-use tokio::io::AsyncWriteExt;
-use tokio::process::ChildStderr;
-use tokio::process::ChildStdin;
-use tokio::process::ChildStdout;
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::UnboundedReceiver;
-use tokio::sync::oneshot;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    process::{ChildStderr, ChildStdin, ChildStdout},
+    sync::{
+        mpsc::{self, UnboundedReceiver},
+        oneshot,
+    },
+};
 
 use serde_json::Value;
 
-use crate::lsp::protocol::{deserialize, serialize};
-use crate::lsp::server_proxy::ToServerMsg;
-use crate::lsp::server_proxy::{LspServerProxy, ToServerChannel};
+use crate::lsp::{
+    protocol::{deserialize, serialize},
+    server_proxy::{LspServerProxy, ToServerChannel, ToServerMsg},
+};
 
 pub struct StdIOProxy {
     to_server: ToServerChannel,

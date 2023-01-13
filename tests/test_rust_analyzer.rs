@@ -1,17 +1,18 @@
 use std::time::Duration;
 
-use lsp_types::notification::Initialized;
-use lsp_types::request::Initialize;
-use lsp_types::request::WorkspaceSymbol;
-use lsp_types::InitializeError;
-use lsp_types::InitializeParams;
-use lsp_types::InitializeResult;
-use lsp_types::InitializedParams;
-use lsp_types::WorkspaceSymbolParams;
-
-use lsp_client::jsonrpc;
-use lsp_client::lsp::client::LspClient;
-use lsp_client::lsp::proxies::stdio_proxy::StdIOProxy;
+use lsp_client::{
+    jsonrpc::JsonRPCResult,
+    lsp::{
+        client::LspClient,
+        proxies::StdIOProxy,
+        types::{
+            notification::Initialized,
+            request::{Initialize, WorkspaceSymbol},
+            InitializeError, InitializeParams, InitializeResult, InitializedParams,
+            WorkspaceSymbolParams,
+        },
+    },
+};
 
 fn start_client() -> LspClient {
     let mut server_proc = tokio::process::Command::new("rust-analyzer")
@@ -50,7 +51,7 @@ async fn test_rust_analyzer() {
     assert!(response.is_ok(), "{:?}", response);
     assert!(matches!(
         response.unwrap().result,
-        jsonrpc::types::JsonRPCResult::Result(InitializeResult { .. })
+        JsonRPCResult::Result(InitializeResult { .. })
     ));
 
     let response = client.notify::<Initialized>(InitializedParams {});
@@ -70,7 +71,7 @@ async fn test_rust_analyzer() {
     let mut response = response.unwrap();
     let mut id = 1;
 
-    while let jsonrpc::types::JsonRPCResult::Error(ref result) = response.result {
+    while let JsonRPCResult::Error(ref result) = response.result {
         if result.code != lsp_types::error_codes::CONTENT_MODIFIED {
             panic!("Got error unexpected code: {:?}", result);
         }
@@ -91,10 +92,7 @@ async fn test_rust_analyzer() {
     }
 
     assert!(
-        matches!(
-            response.result,
-            jsonrpc::types::JsonRPCResult::Result(Some(..))
-        ),
+        matches!(response.result, JsonRPCResult::Result(Some(..))),
         "{:?}",
         response
     )

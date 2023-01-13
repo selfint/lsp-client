@@ -1,15 +1,14 @@
 use anyhow::Result;
-use lsp_types::notification::Notification as LspNotification;
-use lsp_types::request::Request as LspRequest;
 use serde::de::DeserializeOwned;
 use tokio::sync::oneshot;
 
-use crate::jsonrpc::types::Notification;
-use crate::jsonrpc::types::Request;
-use crate::jsonrpc::types::Response;
-
-use crate::lsp::server_proxy::LspServerProxy;
-use crate::lsp::server_proxy::ToServerChannel;
+use crate::{
+    jsonrpc::{Notification, Request, Response},
+    lsp::{
+        server_proxy::{LspServerProxy, ToServerChannel},
+        types::{notification::Notification as LspNotification, request::Request as LspRequest},
+    },
+};
 
 pub struct LspClient {
     to_server: ToServerChannel,
@@ -55,13 +54,17 @@ mod tests {
     };
 
     use serde_json::Value;
-    use tokio::sync::mpsc;
-    use tokio::sync::oneshot;
+    use tokio::sync::{mpsc, oneshot};
 
-    use lsp_types::{notification::Exit, request::Initialize, InitializeParams, InitializeResult};
+    use crate::{
+        jsonrpc::JsonRPCResult,
+        lsp::{
+            server_proxy::LspServerProxy,
+            types::{notification::Exit, request::Initialize, InitializeParams, InitializeResult},
+        },
+    };
 
     use super::*;
-    use crate::{jsonrpc, lsp::server_proxy::LspServerProxy};
 
     struct MockLspServerProxy {
         hits: Arc<Mutex<HashMap<String, u32>>>,
@@ -102,9 +105,7 @@ mod tests {
                                 .expect("got initialize request with None response channel")
                                 .send(
                                     serde_json::to_value(Response::<InitializeResult, ()>::new(
-                                        jsonrpc::types::JsonRPCResult::Result(
-                                            InitializeResult::default(),
-                                        ),
+                                        JsonRPCResult::Result(InitializeResult::default()),
                                         Some(id),
                                     ))
                                     .unwrap(),
@@ -140,10 +141,7 @@ mod tests {
 
         assert!(response.is_ok(), "{:?}", response);
         assert_eq!(
-            Response::new(
-                jsonrpc::types::JsonRPCResult::Result(InitializeResult::default()),
-                Some(1)
-            ),
+            Response::new(JsonRPCResult::Result(InitializeResult::default()), Some(1)),
             response.unwrap()
         );
 
@@ -204,11 +202,11 @@ mod tests {
         assert!(second.is_ok(), "{:?}", second);
 
         assert_eq!(
-            jsonrpc::types::JsonRPCResult::Result(InitializeResult::default()),
+            JsonRPCResult::Result(InitializeResult::default()),
             first.unwrap().result
         );
         assert_eq!(
-            jsonrpc::types::JsonRPCResult::Result(InitializeResult::default()),
+            JsonRPCResult::Result(InitializeResult::default()),
             second.unwrap().result
         );
 
