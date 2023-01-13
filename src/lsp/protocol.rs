@@ -13,7 +13,7 @@ lazy_static! {
                 r"\r\n".then("Content-Type: ").then_repeated(r"[^\r]"),
             ))
             .then(r"\r\n\r\n")
-            .then_named_group("content", repeated("."))
+            .then_named_group("content", repeated(NON_NEWLINE))
     })
     .unwrap();
 }
