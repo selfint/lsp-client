@@ -77,6 +77,11 @@ fn start_stdout_responses_thread(
             let Ok(msg) = deserialize(&buf) else { continue };
             buf.clear();
 
+            println!(
+                "Got response: {}",
+                serde_json::to_string_pretty(&msg).unwrap()
+            );
+
             // we only need to send a response if the message has an id
             let Some(id) = msg.get("id") else { continue };
             let id = id.as_u64().expect("got non-u64 id");
@@ -107,6 +112,11 @@ fn start_to_proc_thread(
 ) {
     tokio::spawn(async move {
         while let Some((msg, response_channel)) = to_server_receiver.recv().await {
+            println!(
+                "Sending msg: {}",
+                serde_json::to_string_pretty(&msg).unwrap()
+            );
+
             let serialized_msg =
                 serialize(&msg).unwrap_or_else(|_| panic!("failed to serialize msg: {:?}", msg));
 
