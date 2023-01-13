@@ -35,7 +35,10 @@ impl LspClient {
         Ok(serde_json::from_value::<Response<R::Result, E>>(response)?)
     }
 
-    pub fn notify<R: LspNotification>(&self, params: R::Params) -> Result<()> {
+    pub fn notify<R>(&self, params: R::Params) -> Result<()>
+    where
+        R: LspNotification,
+    {
         let notification = serde_json::to_value(Notification::new(R::METHOD, Some(params)))?;
 
         self.to_server.send((notification, None))?;
