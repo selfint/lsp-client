@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::Value;
@@ -38,7 +38,7 @@ pub fn deserialize(msg: &[u8]) -> Result<Value> {
         .as_str();
 
     match content.len().cmp(&length) {
-        std::cmp::Ordering::Less => None.context("missing content"),
+        std::cmp::Ordering::Less => Err(anyhow!("missing content")),
         std::cmp::Ordering::Equal => Ok(serde_json::from_str(content)?),
         std::cmp::Ordering::Greater => panic!("received more content than expected length"),
     }
