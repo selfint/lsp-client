@@ -14,8 +14,8 @@ use tokio::{
 
 use serde_json::Value;
 
-use crate::lsp::{
-    protocol::{deserialize, serialize},
+use crate::{
+    lsp_protocol::{deserialize, serialize},
     server_proxy::{LspServerProxy, ToServerChannel, ToServerMsg},
 };
 

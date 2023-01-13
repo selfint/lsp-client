@@ -1,17 +1,15 @@
 use std::time::Duration;
 
 use lsp_client::{
-    jsonrpc::JsonRPCResult,
-    lsp::{
-        client::LspClient,
-        proxies::StdIOProxy,
-        types::{
-            notification::Initialized,
-            request::{Initialize, WorkspaceSymbol},
-            InitializeError, InitializeParams, InitializeResult, InitializedParams,
-            WorkspaceSymbolParams,
-        },
+    jsonrpc_types::JsonRPCResult,
+    lsp_types::{
+        notification::Initialized,
+        request::{Initialize, WorkspaceSymbol},
+        InitializeError, InitializeParams, InitializeResult, InitializedParams,
+        WorkspaceSymbolParams,
     },
+    server_proxy::StdIOProxy,
+    LspClient,
 };
 
 fn start_client() -> LspClient {

@@ -3,11 +3,9 @@ use serde::de::DeserializeOwned;
 use tokio::sync::oneshot;
 
 use crate::{
-    jsonrpc::{Notification, Request, Response},
-    lsp::{
-        server_proxy::{LspServerProxy, ToServerChannel},
-        types::{notification::Notification as LspNotification, request::Request as LspRequest},
-    },
+    jsonrpc_types::{Notification, Request, Response},
+    lsp_types::{notification::Notification as LspNotification, request::Request as LspRequest},
+    server_proxy::{LspServerProxy, ToServerChannel},
 };
 
 pub struct LspClient {
@@ -53,16 +51,13 @@ mod tests {
         sync::{Arc, Mutex},
     };
 
+    use crate::{
+        jsonrpc_types::JsonRPCResult,
+        lsp_types::{notification::Exit, request::Initialize, InitializeParams, InitializeResult},
+    };
+
     use serde_json::Value;
     use tokio::sync::{mpsc, oneshot};
-
-    use crate::{
-        jsonrpc::JsonRPCResult,
-        lsp::{
-            server_proxy::LspServerProxy,
-            types::{notification::Exit, request::Initialize, InitializeParams, InitializeResult},
-        },
-    };
 
     use super::*;
 

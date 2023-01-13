@@ -3,23 +3,6 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::Value;
 
-#[cfg(feature = "normal")]
-lazy_static! {
-    static ref LSP_PACKET_RE: Regex = Regex::new(&{
-        use normal::prelude::*;
-
-        "Content-Length: "
-            .then_named_group("length", at_least_once(DIGIT))
-            .then_optional(group(
-                r"\r\n".then("Content-Type: ").then_repeated(r"[^\r]"),
-            ))
-            .then(r"\r\n\r\n")
-            .then_named_group("content", repeated(NON_NEWLINE))
-    })
-    .unwrap();
-}
-
-#[cfg(not(feature = "normal"))]
 lazy_static! {
     static ref LSP_PACKET_RE: Regex = Regex::new(
         r"Content-Length: (?P<length>\d+)(\r\nContent-Type: [^\r]*)?\r\n\r\n(?P<content>.*)"

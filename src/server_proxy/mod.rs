@@ -1,3 +1,7 @@
+mod stdio_proxy;
+
+pub use stdio_proxy::StdIOProxy;
+
 use serde_json::Value;
 use tokio::sync::{mpsc, oneshot};
 
