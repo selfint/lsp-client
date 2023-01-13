@@ -6,13 +6,12 @@ pub const JSONRPC_V2: &str = "2.0";
 pub struct Request<P> {
     pub jsonrpc: String,
     pub method: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub params: Option<P>,
+    pub params: P,
     pub id: Option<u64>,
 }
 
 impl<P> Request<P> {
-    pub fn new(method: impl Into<String>, params: Option<P>, id: Option<u64>) -> Self {
+    pub fn new(method: impl Into<String>, params: P, id: Option<u64>) -> Self {
         Self {
             jsonrpc: JSONRPC_V2.to_string(),
             method: method.into(),
@@ -59,12 +58,11 @@ pub struct JsonRPCError<D> {
 pub struct Notification<P> {
     pub jsonrpc: String,
     pub method: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub params: Option<P>,
+    pub params: P,
 }
 
 impl<P> Notification<P> {
-    pub fn new(method: impl Into<String>, params: Option<P>) -> Self {
+    pub fn new(method: impl Into<String>, params: P) -> Self {
         Self {
             jsonrpc: JSONRPC_V2.to_string(),
             method: method.into(),
@@ -75,24 +73,22 @@ impl<P> Notification<P> {
 
 #[cfg(test)]
 mod tests {
-    use serde::de::DeserializeOwned;
-    use serde_json::{json, Value};
+    use serde_json::json;
 
     use super::*;
 
-    fn check_serde<D>(expected_serialized: Value, expected_deserialized: D)
-    where
-        D: Serialize + DeserializeOwned + PartialEq + Eq + std::fmt::Debug,
-    {
-        let actual_serialized = serde_json::to_value(&expected_deserialized);
+    macro_rules! assert_serde {
+        ($expected_serialized:expr, $expected_deserialized:expr, $ty:ty) => {
+            let actual_serialized = serde_json::to_value(&$expected_deserialized);
 
-        assert!(actual_serialized.is_ok());
-        assert_eq!(expected_serialized, actual_serialized.unwrap());
+            assert!(actual_serialized.is_ok());
+            assert_eq!($expected_serialized, actual_serialized.unwrap());
 
-        let actual_deserialized = serde_json::from_value::<D>(expected_serialized);
+            let actual_deserialized = serde_json::from_value::<$ty>($expected_serialized);
 
-        assert!(actual_deserialized.is_ok());
-        assert_eq!(expected_deserialized, actual_deserialized.unwrap());
+            assert!(actual_deserialized.is_ok());
+            assert_eq!($expected_deserialized, actual_deserialized.unwrap());
+        };
     }
 
     #[test]
@@ -103,39 +99,55 @@ mod tests {
             p1: u32,
         }
 
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "method": "method",
                 "params": {"p0": 0, "p1": 1},
                 "id": 1
             }),
-            Request::new("method", Some(Params { p0: 0, p1: 1 }), Some(1)),
+            Request::new("method", Params { p0: 0, p1: 1 }, Some(1)),
+            Request<Params>
         );
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "method": "method",
-                "id": 2
+                "params": null,
+                "id": 2,
             }),
-            Request::<()>::new("method", None, Some(2)),
+            Request::<()>::new("method", (), Some(2)),
+            Request<()>
         );
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "method": "method",
-                "id": null
+                "params": null,
+                "id": null,
             }),
-            Request::<()>::new("method", None, None),
+            Request::<()>::new("method", (), None),
+            Request<()>
         );
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "method": "method",
                 "params": [0, 1],
                 "id": 3
             }),
-            Request::new("method", Some(vec![0, 1]), Some(3)),
+            Request::new("method", vec![0, 1], Some(3)),
+            Request<Vec<i32>>
+        );
+        assert_serde!(
+            json!({
+                "jsonrpc": "2.0",
+                "method": "method",
+                "params": null,
+                "id": 4
+            }),
+            Request::<()>::new("method", (), Some(4)),
+            Request<()>
         );
     }
 
@@ -147,51 +159,56 @@ mod tests {
             p1: u32,
         }
 
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "method": "method",
                 "params": {"p0": 0, "p1": 1},
             }),
-            Notification::new("method", Some(Params { p0: 0, p1: 1 })),
+            Notification::new("method", Params { p0: 0, p1: 1 }),
+            Notification<Params>
         );
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "method": "method",
+                "params": null,
             }),
-            Notification::<()>::new("method", None),
+            Notification::<()>::new("method", ()),
+            Notification<()>
         );
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "method": "method",
                 "params": [0, 1],
             }),
-            Notification::new("method", Some(vec![0, 1])),
+            Notification::new("method", vec![0, 1]),
+            Notification<Vec<i32>>
         );
     }
 
     #[test]
     fn test_response_serde() {
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "result": 1,
                 "id": 1
             }),
             Response::new(JsonRPCResult::<u32, ()>::Result(1), Some(1)),
+            Response<u32, ()>
         );
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "result": 1,
                 "id": null
             }),
             Response::new(JsonRPCResult::<u32, ()>::Result(1), None),
+            Response<u32, ()>
         );
-
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "error": {
@@ -208,6 +225,7 @@ mod tests {
                 }),
                 Some(2),
             ),
+            Response<(), ()>
         );
 
         #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
@@ -215,7 +233,7 @@ mod tests {
             error_data: String,
         }
 
-        check_serde(
+        assert_serde!(
             json!({
                 "jsonrpc": "2.0",
                 "error": {
@@ -237,6 +255,7 @@ mod tests {
                 }),
                 Some(3),
             ),
+            Response<(), ErrorData>
         );
     }
 }

@@ -24,7 +24,7 @@ impl LspClient {
         R: LspRequest,
         E: DeserializeOwned,
     {
-        let request = serde_json::to_value(Request::new(R::METHOD, Some(params), Some(id)))?;
+        let request = serde_json::to_value(Request::new(R::METHOD, params, Some(id)))?;
 
         let (sender, receiver) = oneshot::channel();
 
@@ -39,7 +39,7 @@ impl LspClient {
     where
         R: LspNotification,
     {
-        let notification = serde_json::to_value(Notification::new(R::METHOD, Some(params)))?;
+        let notification = serde_json::to_value(Notification::new(R::METHOD, params))?;
 
         self.to_server.send((notification, None))?;
 
