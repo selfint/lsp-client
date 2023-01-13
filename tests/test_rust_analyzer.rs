@@ -4,7 +4,7 @@ use lsp_client::{
     jsonrpc_types::JsonRPCResult,
     lsp_types::{
         notification::Initialized,
-        request::{Initialize, WorkspaceSymbol},
+        request::{Initialize, Shutdown, WorkspaceSymbol},
         InitializeError, InitializeParams, InitializeResult, InitializedParams,
         WorkspaceSymbolParams,
     },
@@ -93,5 +93,10 @@ async fn test_rust_analyzer() {
         matches!(response.result, JsonRPCResult::Result(Some(..))),
         "{:?}",
         response
-    )
+    );
+
+    let response = client.request::<Shutdown, ()>((), id + 1).await;
+
+    assert!(response.is_ok());
+    assert_eq!(JsonRPCResult::Result(()), response.unwrap().result);
 }
