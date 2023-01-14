@@ -1,4 +1,4 @@
-use std::{time::Duration};
+use std::time::Duration;
 
 use lsp_client::{
     jsonrpc_types::JsonRPCResult,
@@ -12,6 +12,7 @@ use lsp_client::{
     LspClient,
 };
 
+use similar_asserts::assert_eq;
 
 #[tokio::test]
 async fn test_rust_analyzer() {

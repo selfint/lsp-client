@@ -62,6 +62,8 @@ mod tests {
     use serde_json::Value;
     use tokio::sync::{mpsc, oneshot};
 
+    use similar_asserts::assert_eq;
+
     use super::*;
 
     struct MockLspServerProxy {

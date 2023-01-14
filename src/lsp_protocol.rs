@@ -48,6 +48,8 @@ pub fn deserialize(msg: &[u8]) -> Result<Value> {
 mod tests {
     use serde_json::json;
 
+    use similar_asserts::assert_eq;
+
     use super::*;
 
     #[test]
