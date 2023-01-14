@@ -1,0 +1,13 @@
+---
+source: src/jsonrpc_types.rs
+expression: "Request::new(\"method\", vec![0, 1], None)"
+---
+{
+  "jsonrpc": "2.0",
+  "method": "method",
+  "params": [
+    0,
+    1
+  ],
+  "id": null
+}

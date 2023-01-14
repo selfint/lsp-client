@@ -73,189 +73,90 @@ impl<P> Notification<P> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
+    use similar_asserts::assert_eq;
 
     use super::*;
 
-    macro_rules! assert_serde {
-        ($expected_serialized:expr, $expected_deserialized:expr, $ty:ty) => {
-            let actual_serialized = serde_json::to_value(&$expected_deserialized);
+    macro_rules! snapshot {
+        ($e:expr) => {
+            insta::assert_json_snapshot!($e);
 
-            assert!(actual_serialized.is_ok());
-            assert_eq!($expected_serialized, actual_serialized.unwrap());
+            let serialized = serde_json::to_value($e);
+            let deserialized = serde_json::from_value(serialized.unwrap()).unwrap();
 
-            let actual_deserialized = serde_json::from_value::<$ty>($expected_serialized);
-
-            assert!(actual_deserialized.is_ok());
-            assert_eq!($expected_deserialized, actual_deserialized.unwrap());
+            assert_eq!($e, deserialized);
         };
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+    struct Params {
+        p0: u32,
+        p1: u32,
     }
 
     #[test]
     fn test_request_serde() {
-        #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
-        struct Params {
-            p0: u32,
-            p1: u32,
-        }
-
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": {"p0": 0, "p1": 1},
-                "id": 1
-            }),
-            Request::new("method", Params { p0: 0, p1: 1 }, Some(1)),
-            Request<Params>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": null,
-                "id": 2,
-            }),
-            Request::<()>::new("method", (), Some(2)),
-            Request<()>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": null,
-                "id": null,
-            }),
-            Request::<()>::new("method", (), None),
-            Request<()>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": [0, 1],
-                "id": 3
-            }),
-            Request::new("method", vec![0, 1], Some(3)),
-            Request<Vec<i32>>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": null,
-                "id": 4
-            }),
-            Request::<()>::new("method", (), Some(4)),
-            Request<()>
-        );
+        snapshot!(Request::new("method", (), None));
+        snapshot!(Request::new("method", (), Some(1)));
+        snapshot!(Request::new("method", vec![0, 1], None));
+        snapshot!(Request::new("method", vec![0, 1], Some(1)));
+        snapshot!(Request::new("method", Params { p0: 0, p1: 1 }, None));
+        snapshot!(Request::new("method", Params { p0: 0, p1: 1 }, Some(1)));
     }
 
     #[test]
     fn test_notification_serde() {
-        #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
-        struct Params {
-            p0: u32,
-            p1: u32,
-        }
-
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": {"p0": 0, "p1": 1},
-            }),
-            Notification::new("method", Params { p0: 0, p1: 1 }),
-            Notification<Params>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": null,
-            }),
-            Notification::<()>::new("method", ()),
-            Notification<()>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "method": "method",
-                "params": [0, 1],
-            }),
-            Notification::new("method", vec![0, 1]),
-            Notification<Vec<i32>>
-        );
+        snapshot!(Notification::new("method", ()));
+        snapshot!(Notification::new("method", vec![0, 1]));
+        snapshot!(Notification::new("method", Params { p0: 0, p1: 1 }));
     }
 
     #[test]
     fn test_response_serde() {
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "result": 1,
-                "id": 1
-            }),
-            Response::new(JsonRPCResult::<u32, ()>::Result(1), Some(1)),
-            Response<u32, ()>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "result": 1,
-                "id": null
-            }),
-            Response::new(JsonRPCResult::<u32, ()>::Result(1), None),
-            Response<u32, ()>
-        );
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "error": {
-                    "code": -1,
-                    "message": "message"
-                },
-                "id": 2
-            }),
-            Response::new(
-                JsonRPCResult::<(), ()>::Error(JsonRPCError {
-                    code: -1,
-                    message: "message".to_string(),
-                    data: None,
-                }),
-                Some(2),
-            ),
-            Response<(), ()>
-        );
-
-        #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
-        struct ErrorData {
-            error_data: String,
+        macro_rules! snapshot_permutations {
+            ($data:expr) => {
+                snapshot!(Response::new(
+                    JsonRPCResult::<_, ()>::Result($data),
+                    Some(1)
+                ));
+                snapshot!(Response::new(JsonRPCResult::<_, ()>::Result($data), None));
+                snapshot!(Response::new(
+                    JsonRPCResult::<(), _>::Error(JsonRPCError {
+                        code: -1,
+                        message: "message".to_string(),
+                        data: Some($data)
+                    }),
+                    Some(1)
+                ));
+                snapshot!(Response::new(
+                    JsonRPCResult::<(), ()>::Error(JsonRPCError {
+                        code: -1,
+                        message: "message".to_string(),
+                        data: None
+                    }),
+                    Some(1)
+                ));
+                snapshot!(Response::new(
+                    JsonRPCResult::<(), _>::Error(JsonRPCError {
+                        code: -1,
+                        message: "message".to_string(),
+                        data: Some($data)
+                    }),
+                    None
+                ));
+                snapshot!(Response::new(
+                    JsonRPCResult::<(), ()>::Error(JsonRPCError {
+                        code: -1,
+                        message: "message".to_string(),
+                        data: None
+                    }),
+                    None
+                ));
+            };
         }
 
-        assert_serde!(
-            json!({
-                "jsonrpc": "2.0",
-                "error": {
-                    "code": -1,
-                    "message": "message",
-                    "data": {
-                        "error_data": "error_data"
-                    }
-                },
-                "id": 3
-            }),
-            Response::new(
-                JsonRPCResult::<(), ErrorData>::Error(JsonRPCError {
-                    code: -1,
-                    message: "message".to_string(),
-                    data: Some(ErrorData {
-                        error_data: "error_data".to_string(),
-                    }),
-                }),
-                Some(3),
-            ),
-            Response<(), ErrorData>
-        );
+        snapshot_permutations!(1);
+        snapshot_permutations!(vec![1, -1]);
+        snapshot_permutations!(Params { p0: 0, p1: 1 });
     }
 }
