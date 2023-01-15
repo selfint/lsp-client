@@ -5,25 +5,25 @@ use crate::JSONRPC_V2;
 #[derive(Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
 pub struct Response<R, E> {
     #[serde(flatten)]
-    pub result: JsonRPCResult<R, E>,
+    pub content: ResponseContent<R, E>,
     pub id: Option<u64>,
 }
 
 impl<R, E> Response<R, E> {
-    pub fn new(result: JsonRPCResult<R, E>, id: Option<u64>) -> Self {
-        Self { result, id }
+    pub fn new(content: ResponseContent<R, E>, id: Option<u64>) -> Self {
+        Self { content, id }
     }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
-pub enum JsonRPCResult<R, E> {
+pub enum ResponseContent<R, E> {
     Result(R),
-    Error(JsonRPCError<E>),
+    Error(ResponseError<E>),
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug, Clone)]
-pub struct JsonRPCError<D> {
+pub struct ResponseError<D> {
     pub code: i64,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -39,10 +39,10 @@ impl<R: Serialize, E: Serialize> Serialize for Response<R, E> {
         state.serialize_field("jsonrpc", JSONRPC_V2)?;
 
         // flatten result
-        match &self.result {
-            JsonRPCResult::Result(r) => state.serialize_field("result", r)?,
-            JsonRPCResult::Error(e) => state.serialize_field("error", e)?,
-        };
+        match &self.content {
+            ResponseContent::Result(r) => state.serialize_field("result", r)?,
+            ResponseContent::Error(e) => state.serialize_field("error", e)?,
+        }
 
         state.serialize_field("id", &self.id)?;
         state.end()
@@ -60,12 +60,12 @@ mod tests {
         macro_rules! snapshot_permutations {
             ($data:expr) => {
                 snapshot!(Response::new(
-                    JsonRPCResult::<_, ()>::Result($data),
+                    ResponseContent::<_, ()>::Result($data),
                     Some(1)
                 ));
-                snapshot!(Response::new(JsonRPCResult::<_, ()>::Result($data), None));
+                snapshot!(Response::new(ResponseContent::<_, ()>::Result($data), None));
                 snapshot!(Response::new(
-                    JsonRPCResult::<(), _>::Error(JsonRPCError {
+                    ResponseContent::<(), _>::Error(ResponseError {
                         code: -1,
                         message: "message".to_string(),
                         data: Some($data)
@@ -73,7 +73,7 @@ mod tests {
                     Some(1)
                 ));
                 snapshot!(Response::new(
-                    JsonRPCResult::<(), ()>::Error(JsonRPCError {
+                    ResponseContent::<(), ()>::Error(ResponseError {
                         code: -1,
                         message: "message".to_string(),
                         data: None
@@ -81,7 +81,7 @@ mod tests {
                     Some(1)
                 ));
                 snapshot!(Response::new(
-                    JsonRPCResult::<(), _>::Error(JsonRPCError {
+                    ResponseContent::<(), _>::Error(ResponseError {
                         code: -1,
                         message: "message".to_string(),
                         data: Some($data)
@@ -89,7 +89,7 @@ mod tests {
                     None
                 ));
                 snapshot!(Response::new(
-                    JsonRPCResult::<(), ()>::Error(JsonRPCError {
+                    ResponseContent::<(), ()>::Error(ResponseError {
                         code: -1,
                         message: "message".to_string(),
                         data: None

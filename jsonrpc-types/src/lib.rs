@@ -4,7 +4,7 @@ mod response;
 
 pub use notification::Notification;
 pub use request::Request;
-pub use response::{JsonRPCError, JsonRPCResult, Response};
+pub use response::{Response, ResponseContent, ResponseError};
 
 pub(crate) const JSONRPC_V2: &str = "2.0";
 

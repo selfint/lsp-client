@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use lsp_client::{
-    jsonrpc_types::JsonRPCResult,
+    jsonrpc_types::ResponseContent,
     lsp_types::{
         notification::Initialized,
         request::{Initialize, Shutdown, WorkspaceSymbol},
@@ -76,8 +76,8 @@ async fn test_client(client: LspClient) {
 
     assert!(response.is_ok(), "{:?}", response);
     assert!(matches!(
-        response.unwrap().result,
-        JsonRPCResult::Result(InitializeResult { .. })
+        response.unwrap().content,
+        ResponseContent::Result(InitializeResult { .. })
     ));
 
     let response = client.notify::<Initialized>(InitializedParams {});
@@ -97,9 +97,9 @@ async fn test_client(client: LspClient) {
     let mut response = response.unwrap();
     let mut id = 1;
 
-    while let JsonRPCResult::Error(ref result) = response.result {
-        if result.code != lsp_types::error_codes::CONTENT_MODIFIED {
-            panic!("Got error unexpected code: {:?}", result);
+    while let ResponseContent::Error(ref error) = response.content {
+        if error.code != lsp_types::error_codes::CONTENT_MODIFIED {
+            panic!("Got error unexpected code: {:?}", error);
         }
 
         std::thread::sleep(Duration::from_millis(100));
@@ -118,7 +118,7 @@ async fn test_client(client: LspClient) {
     }
 
     assert!(
-        matches!(response.result, JsonRPCResult::Result(Some(..))),
+        matches!(response.content, ResponseContent::Result(Some(..))),
         "{:?}",
         response
     );
@@ -126,5 +126,5 @@ async fn test_client(client: LspClient) {
     let response = client.request::<Shutdown, ()>((), id + 1).await;
 
     assert!(response.is_ok());
-    assert_eq!(JsonRPCResult::Result(()), response.unwrap().result);
+    assert_eq!(ResponseContent::Result(()), response.unwrap().content);
 }

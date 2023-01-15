@@ -55,7 +55,7 @@ mod tests {
     };
 
     use crate::{
-        jsonrpc_types::JsonRPCResult,
+        jsonrpc_types::ResponseContent,
         lsp_types::{notification::Exit, request::Initialize, InitializeParams, InitializeResult},
     };
 
@@ -105,7 +105,7 @@ mod tests {
                                 .expect("got initialize request with None response channel")
                                 .send(
                                     serde_json::to_value(Response::<InitializeResult, ()>::new(
-                                        JsonRPCResult::Result(InitializeResult::default()),
+                                        ResponseContent::Result(InitializeResult::default()),
                                         Some(id),
                                     ))
                                     .unwrap(),
@@ -141,7 +141,10 @@ mod tests {
 
         assert!(response.is_ok(), "{:?}", response);
         assert_eq!(
-            Response::new(JsonRPCResult::Result(InitializeResult::default()), Some(1)),
+            Response::new(
+                ResponseContent::Result(InitializeResult::default()),
+                Some(1)
+            ),
             response.unwrap()
         );
 
@@ -202,12 +205,12 @@ mod tests {
         assert!(second.is_ok(), "{:?}", second);
 
         assert_eq!(
-            JsonRPCResult::Result(InitializeResult::default()),
-            first.unwrap().result
+            ResponseContent::Result(InitializeResult::default()),
+            first.unwrap().content
         );
         assert_eq!(
-            JsonRPCResult::Result(InitializeResult::default()),
-            second.unwrap().result
+            ResponseContent::Result(InitializeResult::default()),
+            second.unwrap().content
         );
 
         let hits = proxy.hits.lock().expect("failed to acquire proxy hits");
