@@ -1,0 +1,12 @@
+---
+source: jsonrpc-types/src/notification.rs
+expression: "Notification::new(\"method\", vec![0, 1])"
+---
+{
+  "jsonrpc": "2.0",
+  "method": "method",
+  "params": [
+    0,
+    1
+  ]
+}

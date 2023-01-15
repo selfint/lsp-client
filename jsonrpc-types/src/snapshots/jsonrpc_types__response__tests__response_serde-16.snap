@@ -1,0 +1,12 @@
+---
+source: jsonrpc-types/src/response.rs
+expression: "Response::new(JsonRPCResult::<(),\n            ()>::Error(JsonRPCError {\n            code: -1,\n            message: \"message\".to_string(),\n            data: None,\n        }), Some(1))"
+---
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -1,
+    "message": "message"
+  },
+  "id": 1
+}
