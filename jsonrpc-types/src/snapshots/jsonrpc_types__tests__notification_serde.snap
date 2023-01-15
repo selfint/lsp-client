@@ -1,9 +1,0 @@
----
-source: jsonrpc-types/src/lib.rs
-expression: "Notification::new(\"method\", ())"
----
-{
-  "jsonrpc": "2.0",
-  "method": "method",
-  "params": null
-}

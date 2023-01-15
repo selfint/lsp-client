@@ -1,9 +1,0 @@
----
-source: jsonrpc-types/src/lib.rs
-expression: "Response::new(JsonRPCResult::<_, ()>::Result(1), None)"
----
-{
-  "jsonrpc": "2.0",
-  "result": 1,
-  "id": null
-}
